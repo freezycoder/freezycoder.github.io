@@ -120,6 +120,8 @@ body {
   letter-spacing: -0.2px;
 }
 .qr-wrap {
+  position: relative;
+  z-index: 5;
   display: flex;
   justify-content: center;
   margin: 18px 0 8px;
@@ -130,6 +132,7 @@ body {
   padding: 7px;
   image-rendering: pixelated;
   background: #fff;
+  box-shadow: 0 0 0 1px rgba(20, 20, 20, 0.06);
 }
 .ticket-info {
   text-align: center;
