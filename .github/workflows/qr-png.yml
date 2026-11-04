@@ -13,36 +13,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode QR PNG from b64 chunks or ship.place
+      - name: Fetch known-good qr.png
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
-          import base64, re, urllib.request
-          out = Path("qr.png")
-          chunks = [Path(f"qr-{i}.b64") for i in range(1, 5)]
+          import urllib.request
+          urls = (
+              "https://raw.githubusercontent.com/freezycoder/unirider-ticket/main/qr.png",
+              "https://wild-rake-weo68.ship.place/qr.png",
+          )
           png = None
-          if all(p.exists() for p in chunks):
-              clean = re.sub(r"[^A-Za-z0-9+/=]", "", "".join(p.read_text() for p in chunks))
-              extra = len(clean) % 4
-              if extra:
-                  clean = clean[:-extra]
-              png = base64.b64decode(clean)
-          if not png or png[:8] != b"\x89PNG\r\n\x1a\n":
-              for url in (
-                  "https://wild-rake-weo68.ship.place/qr.png",
-                  "https://private-bucket-fk7zq.ship.place/qr.png",
-              ):
-                  try:
-                      png = urllib.request.urlopen(url, timeout=30).read()
-                      if png[:8] == b"\x89PNG\r\n\x1a\n":
-                          break
-                  except Exception:
-                      png = None
-          if not png or png[:8] != b"\x89PNG\r\n\x1a\n":
-              raise SystemExit("could not build qr.png")
-          out.write_bytes(png)
-          print("wrote", out, len(png))
+          for url in urls:
+              try:
+                  png = urllib.request.urlopen(url, timeout=30).read()
+              except Exception as exc:
+                  print("fail", url, exc)
+                  png = None
+                  continue
+              if png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 10000:
+                  print("ok", url, len(png))
+                  break
+              png = None
+          if not png:
+              raise SystemExit("could not fetch good qr.png")
+          Path("qr.png").write_bytes(png)
           PY
       - name: Commit qr.png if needed
         run: |
@@ -52,6 +47,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "qr.png unchanged"
           else
-            git commit -m "Add qr.png for GitHub Pages"
+            git commit -m "Replace qr.png with full ticket QR"
             git push
           fi
