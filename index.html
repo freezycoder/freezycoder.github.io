@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Your ticket</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-screen">
+      <div class="top-bar">
+        <h1>Your Ticket</h1>
+        <button class="close-btn" type="button" aria-label="Close">
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      <article class="ticket-card">
+        <div class="user-ribbon">
+          <span class="hourglass" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+              <path
+                d="M6.6 3.6h10.4M17 3.6h2.6v1.7"
+                stroke="#fff"
+                stroke-width="1.85"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 3.6v2.8c0 1.85 1.25 3.4 3.05 3.95L12 10.8l.95-.45C14.75 9.8 16 8.25 16 6.4V3.6"
+                stroke="#fff"
+                stroke-width="1.85"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M9.15 6.85h5.7" stroke="#fff" stroke-width="1.7" stroke-linecap="round" />
+              <path
+                d="M12 10.8 10.9 11.35C9 12.05 7.7 13.7 7.7 15.7V20h8.6v-4.3c0-2-1.3-3.65-3.2-4.35L12 10.8Z"
+                stroke="#fff"
+                stroke-width="1.85"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span class="user-name">Guzman Macho</span>
+          <span class="user-price">£174.00</span>
+        </div>
+
+        <div class="qr-wrap">
+          <img
+            class="qr"
+            alt="Ticket QR code"
+            width="188"
+            height="188"
+            src="qr.png"
+          />
+        </div>
+
+        <div class="ticket-info">
+          <h2>Lancaster Bay Term 1</h2>
+          <h3>UniRider 2026/27</h3>
+          <p class="ticket-date">Valid from: 00:00, 14 Oct 2026</p>
+        </div>
+
+        <div class="banner-wrap">
+          <div class="moving-banner">
+            <span class="bubble"></span>
+            <span class="bubble"></span>
+            <span class="bubble"></span>
+            <span class="bubble"></span>
+            <span class="bubble"></span>
+            <span id="banner-text">Pulse</span>
+          </div>
+        </div>
+
+        <p class="ticket-expiry">
+          <span>Ticket expires in</span>
+          <span id="countdown">53d : 12h : 00m : 00s</span>
+        </p>
+
+        <div class="serial-box">12259-20261014151634839-5R38j</div>
+
+        <button class="more-details" type="button">
+          More details
+          <span class="chevron" aria-hidden="true">›</span>
+        </button>
+
+        <div class="secret-panel" hidden aria-hidden="true">
+          <div class="day-row" role="group" aria-label="Day preset">
+            <span class="color-label">Day</span>
+            <select id="banner-day">
+              <option value="auto">Auto</option>
+              <option value="mon">Monday</option>
+              <option value="tue">Tuesday</option>
+              <option value="wed">Wednesday</option>
+              <option value="thu">Thursday</option>
+              <option value="fri">Friday</option>
+              <option value="sat">Saturday</option>
+              <option value="sun">Sunday</option>
+            </select>
+          </div>
+          <div class="color-row" role="group" aria-label="Banner color">
+            <span class="color-label">Color</span>
+            <div class="color-chips">
+              <button type="button" class="color-chip" data-preset="day" aria-label="Day color"></button>
+              <button type="button" class="color-chip" data-preset="grey" aria-label="Grey"></button>
+              <button type="button" class="color-chip" data-preset="pink" aria-label="Red pink"></button>
+              <button type="button" class="color-chip" data-preset="green" aria-label="Green"></button>
+              <button type="button" class="color-chip" data-preset="blue" aria-label="Light blue"></button>
+              <label class="color-native" aria-label="Custom color">
+                <input id="banner-color" type="color" value="#f3176a" />
+              </label>
+            </div>
+          </div>
+          <div class="tilt-row" role="group" aria-label="Banner tilt">
+            <span class="color-label">Tilt</span>
+            <input
+              id="banner-tilt"
+              type="range"
+              min="-45"
+              max="45"
+              step="1"
+              value="0"
+              aria-valuemin="-45"
+              aria-valuemax="45"
+            />
+            <span id="tilt-value">0°</span>
+            <label class="follow-toggle">
+              <input id="follow-device" type="checkbox" checked />
+              Follow
+            </label>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

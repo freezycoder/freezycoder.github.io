@@ -1,2 +1,4 @@
-# freezycoder.github.io
-UniRider ticket replica for iPhone Safari (GitHub Pages)
+# UniRider ticket
+
+Open on iPhone Safari:
+https://freezycoder.github.io/
