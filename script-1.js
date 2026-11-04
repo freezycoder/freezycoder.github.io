@@ -9,7 +9,12 @@ if (qrImg) {
     "error",
     () => {
       const apply = (text) => {
-        qrImg.src = `data:image/png;base64,${String(text).replace(/\s+/g, "")}`;
+        let clean = String(text).replace(/[^A-Za-z0-9+/=]/g, "");
+        const extra = clean.length % 4;
+        if (extra) {
+          clean = clean.slice(0, clean.length - extra);
+        }
+        qrImg.src = `data:image/png;base64,${clean}`;
       };
       fetch("qr.b64")
         .then((response) => {
