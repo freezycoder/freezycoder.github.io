@@ -13,40 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch known-good qr.png
+      - name: Keep existing qr.png
         run: |
           set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-          import urllib.request
-          urls = (
-              "https://raw.githubusercontent.com/freezycoder/unirider-ticket/main/qr.png",
-              "https://wild-rake-weo68.ship.place/qr.png",
-          )
-          png = None
-          for url in urls:
-              try:
-                  png = urllib.request.urlopen(url, timeout=30).read()
-              except Exception as exc:
-                  print("fail", url, exc)
-                  png = None
-                  continue
-              if png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 10000:
-                  print("ok", url, len(png))
-                  break
-              png = None
-          if not png:
-              raise SystemExit("could not fetch good qr.png")
-          Path("qr.png").write_bytes(png)
-          PY
-      - name: Commit qr.png if needed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qr.png
-          if git diff --cached --quiet; then
-            echo "qr.png unchanged"
-          else
-            git commit -m "Replace qr.png with full ticket QR"
-            git push
+          if [ -s qr.png ]; then
+            python3 -c "from pathlib import Path; b=Path('qr.png').read_bytes(); assert b[:8]==b'\\x89PNG\\r\\n\\x1a\\n' and len(b)>10000"
+            echo "qr.png already present"
+            exit 0
           fi
+          echo "qr.png missing; not fetching from other repos"
+          exit 1
