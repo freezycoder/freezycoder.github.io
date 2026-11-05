@@ -1,0 +1,22 @@
+.user-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.name-row input {
+  width: 148px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(210, 216, 224, 0.82);
+  color: #3a3f48;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
