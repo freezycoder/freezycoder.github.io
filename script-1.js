@@ -107,9 +107,31 @@ function pickWord() {
   return WORD_POOL[Math.floor(Math.random() * WORD_POOL.length)];
 }
 
+const WORD_STORAGE_KEY = "ticket-ui-banner-word";
+
+function normalizeBannerWord(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function readStoredWord() {
+  if (stillShot) {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(WORD_STORAGE_KEY);
+    if (raw === null || raw === "") {
+      return null;
+    }
+    const word = normalizeBannerWord(raw);
+    return word || null;
+  } catch {
+    return null;
+  }
+}
+
 const activeDay = resolveDay();
 const theme = WEEKDAYS[activeDay];
-const secretWord = pickWord();
+let secretWord = readStoredWord() || pickWord();
 
 document.documentElement.dataset.day = activeDay;
 bannerEl.style.background = theme.fill;
