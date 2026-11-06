@@ -3,13 +3,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.name-row {
+.name-row,
+.word-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
 }
-.name-row input {
+.name-row input,
+.word-row input {
   width: 148px;
   padding: 4px 8px;
   border: 0;
