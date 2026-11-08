@@ -72,13 +72,13 @@ const WEEKDAYS = {
 };
 
 const DAY_TILT = {
-  sun: 28,
+  sun: 0,
   mon: 0,
   tue: 28,
   wed: -28,
   thu: -8,
   fri: 0,
-  sat: 28,
+  sat: 0,
 };
 
 const WORD_POOL = [
