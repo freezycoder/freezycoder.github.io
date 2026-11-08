@@ -1,0 +1,16 @@
+html[data-day="sat"] .banner-wrap,
+html[data-day="sun"] .banner-wrap {
+  --banner-tilt: 0deg;
+  position: relative;
+  left: auto;
+  top: auto;
+  width: calc(100% + 24px);
+  margin: 18px -12px 8px;
+  transform: rotate(var(--banner-tilt));
+  transform-origin: center center;
+}
+html[data-day="sat"] .moving-banner,
+html[data-day="sun"] .moving-banner {
+  width: 100%;
+  height: 56px;
+}
