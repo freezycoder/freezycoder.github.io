@@ -62,6 +62,7 @@ function ensureOrientationPermission() {
   if (!Orientation) {
     return;
   }
+  // iOS 13+ needs a tap + requestPermission. Older iOS has no such API.
   if (typeof Orientation.requestPermission === "function") {
     Orientation.requestPermission()
       .then((state) => {

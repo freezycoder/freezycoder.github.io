@@ -1,0 +1,16 @@
+{
+  "name": "Your Ticket",
+  "short_name": "Your Ticket",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#0b1224",
+  "background_color": "#0b1224",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

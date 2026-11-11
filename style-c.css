@@ -8,7 +8,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+}
+.name-row > * + *,
+.word-row > * + * {
+  margin-left: 10px;
 }
 .name-row input,
 .word-row input {
