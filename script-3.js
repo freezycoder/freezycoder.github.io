@@ -9,6 +9,9 @@ function setFollowDevice(on) {
   }
 }
 
+const FOLLOW_LERP = 0.1;
+const FOLLOW_SENSITIVITY = 0.4;
+
 function deviceTiltFromOrientation(event) {
   const gamma = event.gamma;
   const beta = event.beta;
@@ -20,7 +23,7 @@ function deviceTiltFromOrientation(event) {
   if (orient === 90 || orient === -90) {
     tilt = (beta === null ? 0 : beta) * (orient === 90 ? 1 : -1);
   }
-  return clampTilt(tilt);
+  return clampTilt(tilt * FOLLOW_SENSITIVITY);
 }
 
 function onDeviceOrientation(event) {
@@ -42,7 +45,7 @@ function tickDeviceFollow() {
   if (smoothedDeviceTilt === null) {
     smoothedDeviceTilt = getDefaultTilt();
   }
-  smoothedDeviceTilt += (targetDeviceTilt - smoothedDeviceTilt) * 0.22;
+  smoothedDeviceTilt += (targetDeviceTilt - smoothedDeviceTilt) * FOLLOW_LERP;
   applyBannerTilt(smoothedDeviceTilt, false, true);
 }
 
