@@ -245,10 +245,14 @@ html[data-day="thu"] .moving-banner {
 #banner-text {
   position: relative;
   z-index: 2;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 600;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
   color: #1a1a1a;
-  letter-spacing: -1.2px;
+  letter-spacing: -0.4px;
   line-height: 1;
   transition: opacity 0.45s ease;
 }
