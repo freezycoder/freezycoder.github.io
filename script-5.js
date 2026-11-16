@@ -10,6 +10,10 @@ function applyBannerWord(value, persist) {
         // Safari private mode can block storage.
       }
     }
+    secretWord = yearDayWord || pickWord();
+    if (bannerText && !bannerText.classList.contains("time-mode")) {
+      bannerText.textContent = secretWord;
+    }
     if (wordInput && document.activeElement !== wordInput) {
       wordInput.value = secretWord;
     }
