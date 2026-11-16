@@ -99,11 +99,6 @@ function applyDayPreset(dayKey) {
   }
   currentDay = dayKey;
   document.documentElement.dataset.day = dayKey;
-  COLOR_PRESETS.day = { fill: WEEKDAYS[dayKey].fill, hex: DAY_HEX[dayKey] };
-  if (dayChip) {
-    dayChip.style.background = WEEKDAYS[dayKey].fill;
-  }
-  applyBannerColor(WEEKDAYS[dayKey].fill, DAY_HEX[dayKey], "day", false);
   applyBannerTilt(DAY_TILT[dayKey], false);
 }
 
