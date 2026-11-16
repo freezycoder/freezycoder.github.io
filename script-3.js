@@ -146,7 +146,7 @@ function pad(value) {
 }
 
 function formatClock(date) {
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function fadeTo(nextText, timeMode) {
