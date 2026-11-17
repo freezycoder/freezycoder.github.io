@@ -141,18 +141,28 @@ function resolveYearDay(date) {
   return dayOfYear(date);
 }
 
-function pickYearDayEntry(data, doy) {
-  const days = data && data.days;
-  if (!Array.isArray(days)) {
+function yearDayRecord(days, doy) {
+  if (!days || typeof days !== "object") {
     return null;
   }
-  const direct = days[doy];
-  if (direct && typeof direct.w === "string" && direct.w.trim()) {
+  const record = days[doy];
+  if (record && typeof record.w === "string" && record.w.trim()) {
+    return record;
+  }
+  return null;
+}
+
+function pickYearDayEntry(data, doy) {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+  const nested = data.days;
+  const direct = yearDayRecord(nested, doy) || yearDayRecord(data, doy);
+  if (direct) {
     return direct;
   }
-  const zeroBased = days[doy - 1];
-  if (zeroBased && typeof zeroBased.w === "string" && zeroBased.w.trim()) {
-    return zeroBased;
+  if (Array.isArray(nested)) {
+    return yearDayRecord(nested, doy - 1);
   }
   return null;
 }
@@ -323,7 +333,7 @@ function fallbackRandomWord() {
   }
 }
 
-fetch("words.json?v=14")
+fetch("words.json?v=15")
   .then((response) => {
     if (!response.ok) {
       throw new Error("missing");
