@@ -6,6 +6,7 @@ function setFollowDevice(on) {
   }
   if (followDevice) {
     smoothedDeviceTilt = null;
+    restOrientation = null;
   }
 }
 
@@ -23,7 +24,10 @@ function deviceTiltFromOrientation(event) {
   if (orient === 90 || orient === -90) {
     tilt = (beta === null ? 0 : beta) * (orient === 90 ? 1 : -1);
   }
-  return clampTilt(tilt * FOLLOW_SENSITIVITY);
+  if (restOrientation === null) {
+    restOrientation = tilt;
+  }
+  return clampTiltRange((tilt - restOrientation) * FOLLOW_SENSITIVITY);
 }
 
 function onDeviceOrientation(event) {
