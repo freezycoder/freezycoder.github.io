@@ -1,4 +1,4 @@
-@import url("style-a.css");
-@import url("style-b.css");
-@import url("style-c.css");
-@import url("style-d.css");
+@import url("style-a.css?v=5");
+@import url("style-b.css?v=5");
+@import url("style-c.css?v=5");
+@import url("style-d.css?v=5");

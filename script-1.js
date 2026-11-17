@@ -81,14 +81,15 @@ const WEEKDAYS = {
   sat: { fill: PINK_FILL },
 };
 
+const MONDAY_TILT = 0;
 const DAY_TILT = {
-  sun: 0,
-  mon: 0,
-  tue: 28,
-  wed: -28,
-  thu: -8,
-  fri: 0,
-  sat: 0,
+  sun: MONDAY_TILT,
+  mon: MONDAY_TILT,
+  tue: MONDAY_TILT,
+  wed: MONDAY_TILT,
+  thu: MONDAY_TILT,
+  fri: MONDAY_TILT,
+  sat: MONDAY_TILT,
 };
 
 const WORD_POOL = [
@@ -102,15 +103,20 @@ const WORD_POOL = [
   "Quill", "Sable", "Thorn", "Vapor", "Wisp",
 ];
 
+const AUTO_DAY = "mon";
+
 function resolveDay() {
   const raw = (params.get("day") || "").trim().toLowerCase();
+  if (raw === "" || raw === "auto") {
+    return AUTO_DAY;
+  }
   if (Object.prototype.hasOwnProperty.call(WEEKDAYS, raw)) {
     return raw;
   }
   if (Object.prototype.hasOwnProperty.call(DAY_ALIASES, raw)) {
     return DAY_ALIASES[raw];
   }
-  return DAY_KEYS[new Date().getDay()];
+  return AUTO_DAY;
 }
 
 function pickWord() {
@@ -188,7 +194,7 @@ let yearDayWord = null;
 let yearDayColor = null;
 let secretWord = readStoredWord() || "";
 
-document.documentElement.dataset.day = activeDay;
+document.documentElement.dataset.day = AUTO_DAY;
 bannerEl.style.background = theme.fill;
 if (secretWord) {
   bannerText.textContent = secretWord;
@@ -317,7 +323,7 @@ function fallbackRandomWord() {
   }
 }
 
-fetch("words.json?v=10")
+fetch("words.json?v=11")
   .then((response) => {
     if (!response.ok) {
       throw new Error("missing");

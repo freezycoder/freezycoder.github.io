@@ -168,15 +168,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .banner-wrap {
-  --banner-tilt: 28deg;
-  position: absolute;
-  left: 2%;
-  top: 48%;
-  width: 380px;
+  --banner-tilt: 0deg;
+  position: relative;
+  left: auto;
+  top: auto;
+  width: calc(100% + 24px);
+  margin: 18px -12px 8px;
   z-index: 4;
   pointer-events: none;
   transform: rotate(var(--banner-tilt));
-  transform-origin: 12% 50%;
+  transform-origin: center center;
   animation: floatBannerRock 5.5s ease-in-out infinite;
 }
 .moving-banner {
@@ -185,11 +186,17 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 54px;
+  height: 56px;
   background: var(--banner-fill);
   overflow: hidden;
 }
-html[data-day="mon"] .banner-wrap {
+html[data-day="mon"] .banner-wrap,
+html[data-day="tue"] .banner-wrap,
+html[data-day="wed"] .banner-wrap,
+html[data-day="thu"] .banner-wrap,
+html[data-day="fri"] .banner-wrap,
+html[data-day="sat"] .banner-wrap,
+html[data-day="sun"] .banner-wrap {
   --banner-tilt: 0deg;
   position: relative;
   left: auto;
@@ -199,46 +206,13 @@ html[data-day="mon"] .banner-wrap {
   transform: rotate(var(--banner-tilt));
   transform-origin: center center;
 }
-html[data-day="mon"] .moving-banner {
-  width: 100%;
-  height: 56px;
-}
-html[data-day="wed"] .banner-wrap {
-  --banner-tilt: -28deg;
-  left: 6%;
-  top: 57%;
-  width: 360px;
-  transform: rotate(var(--banner-tilt));
-  transform-origin: 12% 50%;
-}
-html[data-day="wed"] .moving-banner {
-  height: 52px;
-}
-html[data-day="fri"] .banner-wrap {
-  --banner-tilt: 0deg;
-  position: relative;
-  left: auto;
-  top: auto;
-  width: calc(100% + 24px);
-  margin: 18px -12px 8px;
-  transform: rotate(var(--banner-tilt));
-  transform-origin: center center;
-}
-html[data-day="fri"] .moving-banner {
-  width: 100%;
-  height: 56px;
-}
-html[data-day="thu"] .banner-wrap {
-  --banner-tilt: -8deg;
-  position: relative;
-  left: auto;
-  top: auto;
-  width: calc(100% + 40px);
-  margin: 22px -20px 12px;
-  transform: rotate(var(--banner-tilt));
-  transform-origin: center center;
-}
-html[data-day="thu"] .moving-banner {
+html[data-day="mon"] .moving-banner,
+html[data-day="tue"] .moving-banner,
+html[data-day="wed"] .moving-banner,
+html[data-day="thu"] .moving-banner,
+html[data-day="fri"] .moving-banner,
+html[data-day="sat"] .moving-banner,
+html[data-day="sun"] .moving-banner {
   width: 100%;
   height: 56px;
 }
