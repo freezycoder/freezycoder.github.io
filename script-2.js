@@ -29,18 +29,23 @@ function getDefaultTilt() {
   return MONDAY_TILT;
 }
 
-function clampTilt(value) {
+function clampTiltRange(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) {
     return getDefaultTilt();
   }
-  return Math.max(-45, Math.min(45, Math.round(n)));
+  return Math.max(-45, Math.min(45, n));
+}
+
+function clampTilt(value) {
+  return Math.round(clampTiltRange(value));
 }
 
 function applyBannerTilt(deg, persist, fromFollow) {
-  const tilt = clampTilt(deg);
+  const tilt = fromFollow ? clampTiltRange(deg) : clampTilt(deg);
   if (bannerWrap) {
-    bannerWrap.style.setProperty("--banner-tilt", `${tilt}deg`);
+    const cssTilt = fromFollow ? tilt.toFixed(2) : String(tilt);
+    bannerWrap.style.setProperty("--banner-tilt", `${cssTilt}deg`);
   }
   if (!fromFollow) {
     if (tiltSlider) {
@@ -100,7 +105,9 @@ function applyDayPreset(dayKey) {
   }
   currentDay = dayKey;
   document.documentElement.dataset.day = AUTO_DAY;
-  applyBannerTilt(MONDAY_TILT, false);
+  if (!followDevice) {
+    applyBannerTilt(MONDAY_TILT, false);
+  }
 }
 
 const secretPanel = document.querySelector(".secret-panel");
@@ -132,8 +139,10 @@ function setPickerOpen(open) {
     if (storedColor) {
       applyBannerColor(storedColor.fill, storedColor.hex, storedColor.presetId || "custom", false);
     }
-    syncTiltControls(getDefaultTilt());
-    applyBannerTilt(getDefaultTilt(), false);
+    if (!followDevice) {
+      syncTiltControls(getDefaultTilt());
+      applyBannerTilt(getDefaultTilt(), false);
+    }
   }
 }
 
@@ -196,5 +205,6 @@ const followToggle = document.getElementById("follow-device");
 let followDevice = true;
 let orientationListening = false;
 let targetDeviceTilt = null;
+let restOrientation = null;
 let smoothedDeviceTilt = null;
 let followRaf = null;
