@@ -55,12 +55,8 @@ function applyBannerTilt(deg, persist, fromFollow) {
     if (tiltValue) {
       tiltValue.textContent = `${tilt}°`;
     }
-  } else if (pickerOpen && tiltValue) {
-    tiltValue.textContent = `${tilt}°`;
-    if (tiltSlider) {
-      tiltSlider.value = String(tilt);
-      tiltSlider.setAttribute("aria-valuenow", String(tilt));
-    }
+  } else {
+    syncFollowTiltLabel(tilt);
   }
   if (persist && !stillShot && !fromFollow) {
     try {
@@ -144,6 +140,12 @@ function setPickerOpen(open) {
       applyBannerTilt(getDefaultTilt(), false);
     }
   }
+  if (pickerOpen && followDevice) {
+    displayedFollowTilt = NaN;
+    syncFollowTiltLabel(
+      smoothedDeviceTilt === null ? getDefaultTilt() : smoothedDeviceTilt,
+    );
+  }
 }
 
 function togglePicker() {
@@ -208,3 +210,17 @@ let targetDeviceTilt = null;
 let restOrientation = null;
 let smoothedDeviceTilt = null;
 let followRaf = null;
+let lastFollowTs = null;
+let displayedFollowTilt = 0;
+
+function syncFollowTiltLabel(tilt) {
+  if (!pickerOpen || !tiltValue) {
+    return;
+  }
+  const shown = Math.round(tilt);
+  if (shown === displayedFollowTilt) {
+    return;
+  }
+  displayedFollowTilt = shown;
+  tiltValue.textContent = `${shown}°`;
+}
