@@ -333,7 +333,7 @@ function fallbackRandomWord() {
   }
 }
 
-fetch("words.json?v=15")
+fetch("words.json?v=16")
   .then((response) => {
     if (!response.ok) {
       throw new Error("missing");
