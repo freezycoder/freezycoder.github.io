@@ -26,7 +26,7 @@ const daySelect = document.getElementById("banner-day");
 let currentDay = activeDay;
 
 function getDefaultTilt() {
-  return DAY_TILT[currentDay];
+  return MONDAY_TILT;
 }
 
 function clampTilt(value) {
@@ -92,14 +92,15 @@ function syncTiltControls(deg) {
 }
 
 syncTiltControls(getDefaultTilt());
+applyBannerTilt(getDefaultTilt(), false);
 
 function applyDayPreset(dayKey) {
   if (!Object.prototype.hasOwnProperty.call(WEEKDAYS, dayKey)) {
     return;
   }
   currentDay = dayKey;
-  document.documentElement.dataset.day = dayKey;
-  applyBannerTilt(DAY_TILT[dayKey], false);
+  document.documentElement.dataset.day = AUTO_DAY;
+  applyBannerTilt(MONDAY_TILT, false);
 }
 
 const secretPanel = document.querySelector(".secret-panel");
@@ -131,12 +132,8 @@ function setPickerOpen(open) {
     if (storedColor) {
       applyBannerColor(storedColor.fill, storedColor.hex, storedColor.presetId || "custom", false);
     }
-    const storedTilt = readStoredTilt();
-    if (storedTilt !== null) {
-      applyBannerTilt(storedTilt, false);
-    } else {
-      syncTiltControls(getDefaultTilt());
-    }
+    syncTiltControls(getDefaultTilt());
+    applyBannerTilt(getDefaultTilt(), false);
   }
 }
 

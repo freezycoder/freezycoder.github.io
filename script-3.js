@@ -123,7 +123,7 @@ if (daySelect) {
   daySelect.addEventListener("change", () => {
     const chosen = daySelect.value;
     if (chosen === "auto") {
-      applyDayPreset(DAY_KEYS[new Date().getDay()]);
+      applyDayPreset(AUTO_DAY);
       return;
     }
     applyDayPreset(chosen);
