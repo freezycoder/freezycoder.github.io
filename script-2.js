@@ -29,23 +29,18 @@ function getDefaultTilt() {
   return MONDAY_TILT;
 }
 
-function clampTiltRange(value) {
+function clampTilt(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) {
     return getDefaultTilt();
   }
-  return Math.max(-45, Math.min(45, n));
-}
-
-function clampTilt(value) {
-  return Math.round(clampTiltRange(value));
+  return Math.max(-45, Math.min(45, Math.round(n)));
 }
 
 function applyBannerTilt(deg, persist, fromFollow) {
-  const tilt = fromFollow ? clampTiltRange(deg) : clampTilt(deg);
+  const tilt = clampTilt(deg);
   if (bannerWrap) {
-    const cssTilt = fromFollow ? tilt.toFixed(2) : String(tilt);
-    bannerWrap.style.setProperty("--banner-tilt", `${cssTilt}deg`);
+    bannerWrap.style.setProperty("--banner-tilt", `${tilt}deg`);
   }
   if (!fromFollow) {
     if (tiltSlider) {
@@ -55,8 +50,12 @@ function applyBannerTilt(deg, persist, fromFollow) {
     if (tiltValue) {
       tiltValue.textContent = `${tilt}°`;
     }
-  } else {
-    syncFollowTiltLabel(tilt);
+  } else if (pickerOpen && tiltValue) {
+    tiltValue.textContent = `${tilt}°`;
+    if (tiltSlider) {
+      tiltSlider.value = String(tilt);
+      tiltSlider.setAttribute("aria-valuenow", String(tilt));
+    }
   }
   if (persist && !stillShot && !fromFollow) {
     try {
@@ -136,15 +135,13 @@ function setPickerOpen(open) {
       applyBannerColor(storedColor.fill, storedColor.hex, storedColor.presetId || "custom", false);
     }
     if (!followDevice) {
-      syncTiltControls(getDefaultTilt());
-      applyBannerTilt(getDefaultTilt(), false);
+      const storedTilt = readStoredTilt();
+      if (storedTilt !== null) {
+        applyBannerTilt(storedTilt, false);
+      } else {
+        syncTiltControls(getDefaultTilt());
+      }
     }
-  }
-  if (pickerOpen && followDevice) {
-    displayedFollowTilt = NaN;
-    syncFollowTiltLabel(
-      smoothedDeviceTilt === null ? getDefaultTilt() : smoothedDeviceTilt,
-    );
   }
 }
 
@@ -207,20 +204,5 @@ const followToggle = document.getElementById("follow-device");
 let followDevice = true;
 let orientationListening = false;
 let targetDeviceTilt = null;
-let restOrientation = null;
 let smoothedDeviceTilt = null;
 let followRaf = null;
-let lastFollowTs = null;
-let displayedFollowTilt = 0;
-
-function syncFollowTiltLabel(tilt) {
-  if (!pickerOpen || !tiltValue) {
-    return;
-  }
-  const shown = Math.round(tilt);
-  if (shown === displayedFollowTilt) {
-    return;
-  }
-  displayedFollowTilt = shown;
-  tiltValue.textContent = `${shown}°`;
-}

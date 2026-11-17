@@ -6,16 +6,11 @@ function setFollowDevice(on) {
   }
   if (followDevice) {
     smoothedDeviceTilt = null;
-    restOrientation = null;
-    lastFollowTs = null;
-    displayedFollowTilt = getDefaultTilt();
   }
 }
 
 const FOLLOW_LERP = 0.1;
 const FOLLOW_SENSITIVITY = 0.4;
-const FOLLOW_DEADZONE = 2.5;
-const FOLLOW_MAX_DEG_PER_SEC = 18;
 
 function deviceTiltFromOrientation(event) {
   const gamma = event.gamma;
@@ -28,14 +23,7 @@ function deviceTiltFromOrientation(event) {
   if (orient === 90 || orient === -90) {
     tilt = (beta === null ? 0 : beta) * (orient === 90 ? 1 : -1);
   }
-  if (restOrientation === null) {
-    restOrientation = tilt;
-  }
-  const relative = (tilt - restOrientation) * FOLLOW_SENSITIVITY;
-  if (Math.abs(relative) < FOLLOW_DEADZONE) {
-    return 0;
-  }
-  return clampTiltRange(relative);
+  return clampTilt(tilt * FOLLOW_SENSITIVITY);
 }
 
 function onDeviceOrientation(event) {
@@ -49,28 +37,15 @@ function onDeviceOrientation(event) {
   targetDeviceTilt = next;
 }
 
-function tickDeviceFollow(now) {
+function tickDeviceFollow() {
   followRaf = window.requestAnimationFrame(tickDeviceFollow);
   if (!followDevice || targetDeviceTilt === null || stillShot) {
-    lastFollowTs = null;
     return;
   }
   if (smoothedDeviceTilt === null) {
     smoothedDeviceTilt = getDefaultTilt();
   }
-  const ts = typeof now === "number" ? now : performance.now();
-  const dt = lastFollowTs === null ? 16.67 : Math.min(50, ts - lastFollowTs);
-  lastFollowTs = ts;
-  const next = smoothedDeviceTilt + (targetDeviceTilt - smoothedDeviceTilt) * FOLLOW_LERP;
-  const maxStep = FOLLOW_MAX_DEG_PER_SEC * (dt / 1000);
-  const delta = next - smoothedDeviceTilt;
-  if (delta > maxStep) {
-    smoothedDeviceTilt += maxStep;
-  } else if (delta < -maxStep) {
-    smoothedDeviceTilt -= maxStep;
-  } else {
-    smoothedDeviceTilt = next;
-  }
+  smoothedDeviceTilt += (targetDeviceTilt - smoothedDeviceTilt) * FOLLOW_LERP;
   applyBannerTilt(smoothedDeviceTilt, false, true);
 }
 
