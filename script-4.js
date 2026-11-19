@@ -1,4 +1,5 @@
-const DEFAULT_HOLDER_NAME = "Guzman Macho";
+const DEFAULT_HOLDER_NAME = "Default Name";
+const LEGACY_DEFAULT_HOLDER_NAME = "Guzman Macho";
 const NAME_STORAGE_KEY = "ticket-ui-holder-name";
 const DEVICE_ID_KEY = "ticket-ui-device-id";
 const NAME_SAVE_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
@@ -17,14 +18,26 @@ const JUNK_HOLDER_NAMES = {
   na: true,
   test: true,
   placeholder: true,
+  "default name": true,
+  "guzman macho": true,
 };
 const nameEl = document.querySelector(".user-name");
 const nameInput = document.getElementById("ticket-name");
 let nameSaveTimer = 0;
 
+function isLegacyDefaultHolderName(value) {
+  return (
+    String(value || "").replace(/\s+/g, " ").trim().toLowerCase() ===
+    LEGACY_DEFAULT_HOLDER_NAME.toLowerCase()
+  );
+}
+
 function normalizeHolderName(value) {
   const trimmed = String(value || "").replace(/\s+/g, " ").trim();
-  return trimmed || DEFAULT_HOLDER_NAME;
+  if (!trimmed || isLegacyDefaultHolderName(trimmed)) {
+    return DEFAULT_HOLDER_NAME;
+  }
+  return trimmed;
 }
 
 function isJunkHolderName(value) {
@@ -41,7 +54,7 @@ function readStoredName() {
   }
   try {
     const raw = window.localStorage.getItem(NAME_STORAGE_KEY);
-    if (raw === null || raw === "") {
+    if (raw === null || raw === "" || isLegacyDefaultHolderName(raw)) {
       return null;
     }
     return normalizeHolderName(raw);
@@ -120,7 +133,7 @@ function applyHolderName(value, persist) {
 }
 
 const storedHolderName = readStoredName();
-applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, false);
+applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, !storedHolderName);
 if (storedHolderName) {
   postHolderName(storedHolderName);
 }
