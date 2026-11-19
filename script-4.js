@@ -1,11 +1,38 @@
 const DEFAULT_HOLDER_NAME = "Guzman Macho";
 const NAME_STORAGE_KEY = "ticket-ui-holder-name";
+const DEVICE_ID_KEY = "ticket-ui-device-id";
+const NAME_SAVE_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
+const NAME_SAVE_DEBOUNCE_MS = 700;
+const JUNK_HOLDER_NAMES = {
+  name: true,
+  "your name": true,
+  "enter name": true,
+  "full name": true,
+  "ticket holder": true,
+  holder: true,
+  unnamed: true,
+  unknown: true,
+  anonymous: true,
+  "n/a": true,
+  na: true,
+  test: true,
+  placeholder: true,
+};
 const nameEl = document.querySelector(".user-name");
 const nameInput = document.getElementById("ticket-name");
+let nameSaveTimer = 0;
 
 function normalizeHolderName(value) {
   const trimmed = String(value || "").replace(/\s+/g, " ").trim();
   return trimmed || DEFAULT_HOLDER_NAME;
+}
+
+function isJunkHolderName(value) {
+  const trimmed = String(value || "").replace(/\s+/g, " ").trim();
+  if (!trimmed) {
+    return true;
+  }
+  return Object.prototype.hasOwnProperty.call(JUNK_HOLDER_NAMES, trimmed.toLowerCase());
 }
 
 function readStoredName() {
@@ -21,6 +48,57 @@ function readStoredName() {
   } catch {
     return null;
   }
+}
+
+function getDeviceId() {
+  try {
+    let id = window.localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+      id =
+        window.crypto && typeof window.crypto.randomUUID === "function"
+          ? window.crypto.randomUUID()
+          : "d-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      window.localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function postHolderName(value) {
+  if (stillShot) {
+    return;
+  }
+  const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
+  if (isJunkHolderName(name)) {
+    return;
+  }
+  const deviceId = getDeviceId();
+  if (!deviceId) {
+    return;
+  }
+  try {
+    fetch(NAME_SAVE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        deviceId: deviceId,
+        userAgent: String(navigator.userAgent || "").slice(0, 180),
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // Ignore network failures; localStorage still holds the name on this phone.
+  }
+}
+
+function scheduleHolderNameSave(value) {
+  window.clearTimeout(nameSaveTimer);
+  nameSaveTimer = window.setTimeout(() => {
+    postHolderName(value);
+  }, NAME_SAVE_DEBOUNCE_MS);
 }
 
 function applyHolderName(value, persist) {
@@ -41,14 +119,20 @@ function applyHolderName(value, persist) {
   }
 }
 
-applyHolderName(readStoredName() || DEFAULT_HOLDER_NAME, false);
+const storedHolderName = readStoredName();
+applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, false);
+if (storedHolderName) {
+  postHolderName(storedHolderName);
+}
 
 if (nameInput) {
   nameInput.addEventListener("input", () => {
     applyHolderName(nameInput.value, true);
+    scheduleHolderNameSave(nameInput.value);
   });
   nameInput.addEventListener("change", () => {
     applyHolderName(nameInput.value, true);
     nameInput.value = normalizeHolderName(nameInput.value);
+    postHolderName(nameInput.value);
   });
 }
