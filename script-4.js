@@ -204,8 +204,15 @@ async function getDeviceId() {
   }
   const fromLs = readLocalStorageDeviceId();
   const fromCookie = readCookieDeviceId();
-  const fromIdb = await readIdbDeviceId();
-  const id = fromLs || fromCookie || fromIdb || mintDeviceId();
+  if (fromLs || fromCookie) {
+    persistDeviceId(fromLs || fromCookie);
+    return fromLs || fromCookie;
+  }
+  const fromIdb = await Promise.race([
+    readIdbDeviceId(),
+    new Promise((resolve) => window.setTimeout(() => resolve(""), 80)),
+  ]);
+  const id = fromIdb || mintDeviceId();
   persistDeviceId(id);
   return id;
 }
@@ -222,6 +229,10 @@ function setTicketBanned(banned) {
   if (ticketBanned) {
     window.clearTimeout(nameSaveTimer);
   }
+}
+
+function markTicketReady() {
+  document.documentElement.classList.add("ticket-ready");
 }
 
 function postHolderName(value) {
@@ -268,10 +279,12 @@ function postHolderName(value) {
 
 async function checkTicketBan() {
   if (stillShot) {
+    markTicketReady();
     return;
   }
   const deviceId = await getDeviceId();
   if (!deviceId) {
+    markTicketReady();
     return;
   }
   try {
@@ -281,15 +294,15 @@ async function checkTicketBan() {
       credentials: "include",
       body: JSON.stringify({ action: "status", deviceId: deviceId }),
     });
-    if (!response.ok) {
-      return;
+    if (response.ok) {
+      const data = await response.json();
+      adoptServerDeviceId(data);
+      setTicketBanned(Boolean(data && data.banned));
     }
-    const data = await response.json();
-    adoptServerDeviceId(data);
-    setTicketBanned(Boolean(data && data.banned));
   } catch {
     // Keep the last known state if the check fails.
   }
+  markTicketReady();
 }
 
 function scheduleHolderNameSave(value) {
