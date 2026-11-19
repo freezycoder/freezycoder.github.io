@@ -214,12 +214,14 @@ async function setHolderBan(deviceId, banned) {
     for (let i = 0; i < 40 && inFlight; i += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 50));
     }
-    const response = await fetch(LIST_URL, {
+    const response = await fetch(LIST_URL + "?cb=" + String(Date.now()), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + secret,
+        "Cache-Control": "no-store",
       },
+      cache: "no-store",
       body: JSON.stringify({
         action: banned ? "ban" : "unban",
         deviceId: id,
@@ -251,8 +253,9 @@ async function setHolderBan(deviceId, banned) {
 }
 
 async function fetchHolders(secret) {
-  const response = await fetch(LIST_URL, {
-    headers: { Authorization: "Bearer " + secret },
+  const response = await fetch(LIST_URL + "?cb=" + String(Date.now()), {
+    headers: { Authorization: "Bearer " + secret, "Cache-Control": "no-store" },
+    cache: "no-store",
   });
   if (response.status === 401) {
     const error = new Error("unauthorized");

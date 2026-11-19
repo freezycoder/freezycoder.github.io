@@ -198,22 +198,34 @@ function persistDeviceId(id) {
   writeIdbDeviceId(id);
 }
 
-async function getDeviceId() {
-  if (isValidDeviceId(cachedDeviceId)) {
-    persistDeviceId(cachedDeviceId);
-    return cachedDeviceId;
-  }
-  const fromLs = readLocalStorageDeviceId();
-  const fromCookie = readCookieDeviceId();
-  if (fromLs || fromCookie) {
-    persistDeviceId(fromLs || fromCookie);
-    return fromLs || fromCookie;
-  }
+async function readAllDeviceIds() {
+  const ids = [];
+  const add = (id) => {
+    if (isValidDeviceId(id) && ids.indexOf(id) === -1) {
+      ids.push(id);
+    }
+  };
+  add(cachedDeviceId);
+  add(readLocalStorageDeviceId());
+  add(readCookieDeviceId());
   const fromIdb = await Promise.race([
     readIdbDeviceId(),
     new Promise((resolve) => window.setTimeout(() => resolve(""), 80)),
   ]);
-  const id = fromIdb || mintDeviceId();
+  add(fromIdb);
+  return ids;
+}
+
+async function getDeviceId() {
+  if (isValidDeviceId(cachedDeviceId)) {
+    return cachedDeviceId;
+  }
+  const ids = await readAllDeviceIds();
+  if (ids.length) {
+    cachedDeviceId = ids[0];
+    return ids[0];
+  }
+  const id = mintDeviceId();
   persistDeviceId(id);
   return id;
 }
@@ -225,6 +237,18 @@ function adoptServerDeviceId(data) {
   if (data && isValidDeviceId(data.deviceId)) {
     persistDeviceId(data.deviceId);
   }
+}
+
+function statusUrl() {
+  return NAME_SAVE_URL + "?cb=" + String(Date.now());
+}
+
+function storedStatusName() {
+  const stored = readStoredName();
+  if (!stored || isJunkHolderName(stored)) {
+    return "";
+  }
+  return stored;
 }
 
 function setBanCheckTimer() {
@@ -258,18 +282,23 @@ function postHolderName(value) {
   if (isJunkHolderName(name)) {
     return;
   }
-  getDeviceId()
-    .then((deviceId) => {
+  Promise.all([getDeviceId(), readAllDeviceIds()])
+    .then(([deviceId, deviceIds]) => {
       if (!deviceId) {
         return null;
       }
-      return fetch(NAME_SAVE_URL, {
+      return fetch(statusUrl(), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+        cache: "no-store",
         credentials: "include",
         body: JSON.stringify({
           name: name,
           deviceId: deviceId,
+          deviceIds: deviceIds,
           userAgent: String(navigator.userAgent || "").slice(0, 180),
         }),
         keepalive: true,
@@ -297,17 +326,27 @@ async function checkTicketBan() {
     markTicketReady();
     return;
   }
-  const deviceId = await getDeviceId();
+  const deviceIds = await readAllDeviceIds();
+  const deviceId = deviceIds[0] || (await getDeviceId());
   if (!deviceId) {
     markTicketReady();
     return;
   }
   try {
-    const response = await fetch(NAME_SAVE_URL, {
+    const response = await fetch(statusUrl(), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+      cache: "no-store",
       credentials: "include",
-      body: JSON.stringify({ action: "status", deviceId: deviceId }),
+      body: JSON.stringify({
+        action: "status",
+        deviceId: deviceId,
+        deviceIds: deviceIds,
+        name: storedStatusName(),
+      }),
     });
     if (response.ok) {
       const data = await response.json();
