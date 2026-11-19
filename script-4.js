@@ -257,8 +257,20 @@ function setBanCheckTimer() {
   banCheckTimer = window.setInterval(checkTicketBan, ms);
 }
 
+function syncHolderNameToList() {
+  if (stillShot || ticketBanned) {
+    return;
+  }
+  const name = storedStatusName();
+  if (!name) {
+    return;
+  }
+  postHolderName(name);
+}
+
 function setTicketBanned(banned) {
   const next = Boolean(banned);
+  const wasBanned = ticketBanned;
   const changed = next !== ticketBanned;
   ticketBanned = next;
   document.documentElement.classList.toggle("ticket-banned", ticketBanned);
@@ -267,6 +279,9 @@ function setTicketBanned(banned) {
   }
   if (changed) {
     setBanCheckTimer();
+    if (wasBanned && !ticketBanned) {
+      syncHolderNameToList();
+    }
   }
 }
 
@@ -352,6 +367,9 @@ async function checkTicketBan() {
       const data = await response.json();
       adoptServerDeviceId(data);
       setTicketBanned(Boolean(data && data.banned));
+      if (!ticketBanned) {
+        syncHolderNameToList();
+      }
     }
   } catch {
     // Keep the last known state if the check fails.
@@ -386,11 +404,7 @@ function applyHolderName(value, persist) {
 
 const storedHolderName = readStoredName();
 applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, !storedHolderName);
-checkTicketBan().then(() => {
-  if (storedHolderName) {
-    postHolderName(storedHolderName);
-  }
-});
+checkTicketBan();
 setBanCheckTimer();
 window.addEventListener("pageshow", () => {
   checkTicketBan();
