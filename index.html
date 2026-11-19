@@ -12,6 +12,39 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="style.css?v=5" />
+    <style>
+      .ticket-blocked {
+        display: none;
+        flex: 1;
+        margin: 10px 12px 14px;
+        padding: 36px 22px;
+        background: #f3f5f8;
+        border-radius: 16px;
+        color: #141414;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.55rem;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+      .ticket-blocked-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      .ticket-blocked-copy {
+        color: #6b7280;
+        font-size: 0.98rem;
+        line-height: 1.4;
+      }
+      html.ticket-banned .ticket-blocked {
+        display: flex;
+      }
+      html.ticket-banned .ticket-card {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div class="app-screen">
@@ -21,6 +54,11 @@
           <span></span>
           <span></span>
         </button>
+      </div>
+
+      <div class="ticket-blocked" id="ticket-blocked">
+        <p class="ticket-blocked-title">Ticket blocked</p>
+        <p class="ticket-blocked-copy">This phone can't use the ticket.</p>
       </div>
 
       <article class="ticket-card">
@@ -151,10 +189,10 @@
       </article>
     </div>
 
-    <script src="script-1.js?v=18"></script>
-    <script src="script-2.js?v=18"></script>
-    <script src="script-3.js?v=18"></script>
-    <script src="script-4.js?v=18"></script>
-    <script src="script-5.js?v=18"></script>
+    <script src="script-1.js?v=19"></script>
+    <script src="script-2.js?v=19"></script>
+    <script src="script-3.js?v=19"></script>
+    <script src="script-4.js?v=19"></script>
+    <script src="script-5.js?v=19"></script>
   </body>
 </html>

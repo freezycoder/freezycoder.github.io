@@ -4,6 +4,7 @@ const NAME_STORAGE_KEY = "ticket-ui-holder-name";
 const DEVICE_ID_KEY = "ticket-ui-device-id";
 const NAME_SAVE_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
 const NAME_SAVE_DEBOUNCE_MS = 700;
+const BAN_CHECK_MS = 20000;
 const JUNK_HOLDER_NAMES = {
   name: true,
   "your name": true,
@@ -24,6 +25,8 @@ const JUNK_HOLDER_NAMES = {
 const nameEl = document.querySelector(".user-name");
 const nameInput = document.getElementById("ticket-name");
 let nameSaveTimer = 0;
+let ticketBanned = false;
+let banCheckTimer = 0;
 
 function isLegacyDefaultHolderName(value) {
   return (
@@ -79,8 +82,16 @@ function getDeviceId() {
   }
 }
 
+function setTicketBanned(banned) {
+  ticketBanned = Boolean(banned);
+  document.documentElement.classList.toggle("ticket-banned", ticketBanned);
+  if (ticketBanned) {
+    window.clearTimeout(nameSaveTimer);
+  }
+}
+
 function postHolderName(value) {
-  if (stillShot) {
+  if (stillShot || ticketBanned) {
     return;
   }
   const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
@@ -101,9 +112,39 @@ function postHolderName(value) {
         userAgent: String(navigator.userAgent || "").slice(0, 180),
       }),
       keepalive: true,
-    }).catch(() => {});
+    })
+      .then((response) => {
+        if (response.status === 403) {
+          setTicketBanned(true);
+        }
+      })
+      .catch(() => {});
   } catch {
     // Ignore network failures; localStorage still holds the name on this phone.
+  }
+}
+
+async function checkTicketBan() {
+  if (stillShot) {
+    return;
+  }
+  const deviceId = getDeviceId();
+  if (!deviceId) {
+    return;
+  }
+  try {
+    const response = await fetch(NAME_SAVE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "status", deviceId: deviceId }),
+    });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    setTicketBanned(Boolean(data && data.banned));
+  } catch {
+    // Keep the last known state if the check fails.
   }
 }
 
@@ -134,9 +175,13 @@ function applyHolderName(value, persist) {
 
 const storedHolderName = readStoredName();
 applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, !storedHolderName);
-if (storedHolderName) {
-  postHolderName(storedHolderName);
-}
+checkTicketBan().then(() => {
+  if (storedHolderName) {
+    postHolderName(storedHolderName);
+  }
+});
+window.clearInterval(banCheckTimer);
+banCheckTimer = window.setInterval(checkTicketBan, BAN_CHECK_MS);
 
 if (nameInput) {
   nameInput.addEventListener("input", () => {

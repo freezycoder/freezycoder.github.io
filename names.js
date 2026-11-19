@@ -16,6 +16,7 @@ const lockBtn = document.getElementById("lock-btn");
 
 let refreshTimer = 0;
 let inFlight = false;
+let banInFlight = false;
 
 function readStoredSecret() {
   try {
@@ -122,13 +123,27 @@ function withDuplicateSuffixes(holders) {
   });
 }
 
+function isHolderBanned(holder) {
+  if (!holder) {
+    return false;
+  }
+  if (holder.banned === true) {
+    return true;
+  }
+  return Boolean(holder.banned_at);
+}
+
 function renderHolders(holders) {
   const rows = withDuplicateSuffixes(Array.isArray(holders) ? holders : []);
   if (holdersEl) {
     holdersEl.replaceChildren();
     rows.forEach((row) => {
+      const banned = isHolderBanned(row.holder);
       const item = document.createElement("li");
-      item.className = "holder";
+      item.className = banned ? "holder is-banned" : "holder";
+
+      const top = document.createElement("div");
+      top.className = "holder-top";
 
       const title = document.createElement("div");
       title.className = "holder-name";
@@ -139,6 +154,13 @@ function renderHolders(holders) {
         idSpan.textContent = " · " + row.suffix;
         title.appendChild(idSpan);
       }
+      top.appendChild(title);
+      if (banned) {
+        const badge = document.createElement("span");
+        badge.className = "ban-badge";
+        badge.textContent = "Banned";
+        top.appendChild(badge);
+      }
 
       const times = document.createElement("div");
       times.className = "holder-times";
@@ -148,13 +170,83 @@ function renderHolders(holders) {
       last.textContent = "Last seen " + formatWhen(row.holder.last_seen);
       times.append(first, last);
 
-      item.append(title, times);
+      const actions = document.createElement("div");
+      actions.className = "holder-actions";
+      const banBtn = document.createElement("button");
+      banBtn.type = "button";
+      banBtn.setAttribute("data-device-id", String(row.holder.device_id || ""));
+      if (banned) {
+        banBtn.className = "unban";
+        banBtn.textContent = "Unban";
+      } else {
+        banBtn.className = "ban";
+        banBtn.textContent = "Ban";
+      }
+      actions.appendChild(banBtn);
+
+      item.append(top, times, actions);
       holdersEl.appendChild(item);
     });
   }
   if (countLabelEl) {
     const n = rows.length;
     countLabelEl.textContent = n === 1 ? "1 name" : n + " names";
+  }
+}
+
+async function setHolderBan(deviceId, banned) {
+  const secret = readStoredSecret();
+  if (!secret) {
+    showGate("Paste the list token or PIN.", false);
+    return;
+  }
+  if (banInFlight) {
+    return;
+  }
+  const id = String(deviceId || "").trim();
+  if (!id) {
+    setStatus(listStatusEl, "Could not ban: missing device id.", true);
+    return;
+  }
+  banInFlight = true;
+  setStatus(listStatusEl, banned ? "Banning…" : "Unbanning…", false);
+  try {
+    for (let i = 0; i < 40 && inFlight; i += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    }
+    const response = await fetch(LIST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + secret,
+      },
+      body: JSON.stringify({
+        action: banned ? "ban" : "unban",
+        deviceId: id,
+      }),
+    });
+    if (response.status === 401) {
+      const error = new Error("unauthorized");
+      error.code = "unauthorized";
+      throw error;
+    }
+    if (!response.ok) {
+      throw new Error("ban failed");
+    }
+    for (let i = 0; i < 20 && inFlight; i += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    }
+    await loadHolders(secret, false);
+  } catch (error) {
+    const unauthorized = error && error.code === "unauthorized";
+    if (unauthorized) {
+      clearStoredSecret();
+      showGate("Wrong token or PIN.", true);
+    } else {
+      setStatus(listStatusEl, "Could not update ban. Try again.", true);
+    }
+  } finally {
+    banInFlight = false;
   }
 }
 
@@ -216,6 +308,22 @@ function startAutoRefresh(secret) {
   refreshTimer = window.setInterval(() => {
     loadHolders(secret, false);
   }, REFRESH_MS);
+}
+
+if (holdersEl) {
+  holdersEl.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const btn = target.closest("button.ban, button.unban");
+    if (!btn || !holdersEl.contains(btn)) {
+      return;
+    }
+    const id = btn.getAttribute("data-device-id") || "";
+    const shouldBan = btn.classList.contains("ban");
+    setHolderBan(id, shouldBan);
+  });
 }
 
 if (unlockForm) {
