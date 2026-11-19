@@ -139,6 +139,42 @@
         font-size: 0.88rem;
         line-height: 1.45;
       }
+      .holder-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      .holder.is-banned {
+        border-color: #5a2a3a;
+      }
+      .ban-badge {
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #ffb3c3;
+        background: #4a1c2a;
+        border-radius: 999px;
+        padding: 0.22rem 0.55rem;
+      }
+      .holder-actions {
+        margin-top: 0.7rem;
+      }
+      button.ban,
+      button.unban {
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+      }
+      button.ban {
+        background: var(--danger);
+      }
+      button.unban {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
       [hidden] {
         display: none !important;
       }
@@ -180,6 +216,6 @@
         <ul class="holders" id="holders"></ul>
       </section>
     </main>
-    <script src="names.js?v=1"></script>
+    <script src="names.js?v=2"></script>
   </body>
 </html>
