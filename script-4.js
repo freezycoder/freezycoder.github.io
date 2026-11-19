@@ -8,6 +8,7 @@ const DEVICE_COOKIE_MAX_AGE = 34560000;
 const NAME_SAVE_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
 const NAME_SAVE_DEBOUNCE_MS = 700;
 const BAN_CHECK_MS = 20000;
+const BAN_CHECK_BANNED_MS = 2500;
 const JUNK_HOLDER_NAMES = {
   name: true,
   "your name": true,
@@ -218,16 +219,30 @@ async function getDeviceId() {
 }
 
 function adoptServerDeviceId(data) {
+  if (data && data.banned) {
+    return;
+  }
   if (data && isValidDeviceId(data.deviceId)) {
     persistDeviceId(data.deviceId);
   }
 }
 
+function setBanCheckTimer() {
+  window.clearInterval(banCheckTimer);
+  const ms = ticketBanned ? BAN_CHECK_BANNED_MS : BAN_CHECK_MS;
+  banCheckTimer = window.setInterval(checkTicketBan, ms);
+}
+
 function setTicketBanned(banned) {
-  ticketBanned = Boolean(banned);
+  const next = Boolean(banned);
+  const changed = next !== ticketBanned;
+  ticketBanned = next;
   document.documentElement.classList.toggle("ticket-banned", ticketBanned);
   if (ticketBanned) {
     window.clearTimeout(nameSaveTimer);
+  }
+  if (changed) {
+    setBanCheckTimer();
   }
 }
 
@@ -337,8 +352,15 @@ checkTicketBan().then(() => {
     postHolderName(storedHolderName);
   }
 });
-window.clearInterval(banCheckTimer);
-banCheckTimer = window.setInterval(checkTicketBan, BAN_CHECK_MS);
+setBanCheckTimer();
+window.addEventListener("pageshow", () => {
+  checkTicketBan();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    checkTicketBan();
+  }
+});
 
 if (nameInput) {
   nameInput.addEventListener("input", () => {
