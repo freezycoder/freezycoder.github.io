@@ -164,13 +164,15 @@ function fillBanScreenForm(banScreen) {
     banScreen && Object.prototype.hasOwnProperty.call(banScreen, "gifUrl")
       ? String(banScreen.gifUrl || "")
       : DEFAULT_BAN_GIF;
-  if (banMessageInput) {
+  if (banMessageInput && document.activeElement !== banMessageInput) {
     banMessageInput.value = message;
   }
-  if (banGifInput) {
-    banGifInput.value = gif;
+  if (document.activeElement !== banGifInput) {
+    if (banGifInput) {
+      banGifInput.value = gif;
+    }
+    updateBanPreview(gif);
   }
-  updateBanPreview(gif);
 }
 
 function renderHolders(holders) {

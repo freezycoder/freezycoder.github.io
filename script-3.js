@@ -23,7 +23,7 @@ function deviceTiltFromOrientation(event) {
   if (orient === 90 || orient === -90) {
     tilt = (beta === null ? 0 : beta) * (orient === 90 ? 1 : -1);
   }
-  return clampTilt(tilt * FOLLOW_SENSITIVITY);
+  return clampTilt(-tilt * FOLLOW_SENSITIVITY);
 }
 
 function onDeviceOrientation(event) {
