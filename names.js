@@ -1,5 +1,8 @@
 const LIST_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
 const TOKEN_KEY = "ticket-holders-list-token";
+const DEVICE_ID_KEY = "ticket-ui-device-id";
+const DEVICE_IDB_NAME = "ticket-ui";
+const DEVICE_IDB_STORE = "device";
 const REFRESH_MS = 20000;
 const DEFAULT_BAN_MESSAGE = "u just got mauled by the tigers, q os follen";
 const DEFAULT_BAN_GIF = "https://freezycoder.github.io/ban.gif";
@@ -15,6 +18,7 @@ const countLabelEl = document.getElementById("count-label");
 const updatedLabelEl = document.getElementById("updated-label");
 const refreshBtn = document.getElementById("refresh-btn");
 const lockBtn = document.getElementById("lock-btn");
+const resetDeviceBtn = document.getElementById("reset-device-btn");
 const banScreenForm = document.getElementById("ban-screen-form");
 const banMessageInput = document.getElementById("ban-message");
 const banGifInput = document.getElementById("ban-gif");
@@ -25,6 +29,8 @@ let refreshTimer = 0;
 let inFlight = false;
 let banInFlight = false;
 let banScreenSaving = false;
+let resetInFlight = false;
+let autoResetAttempted = false;
 
 function readStoredSecret() {
   try {
@@ -48,6 +54,158 @@ function clearStoredSecret() {
     window.localStorage.removeItem(TOKEN_KEY);
   } catch {
     // Ignore storage failures when locking.
+  }
+}
+
+function readBrowserDeviceIds() {
+  const ids = [];
+  const add = (value) => {
+    const id = String(value || "").trim();
+    if (id && ids.indexOf(id) === -1) {
+      ids.push(id);
+    }
+  };
+  try {
+    add(window.localStorage.getItem(DEVICE_ID_KEY));
+  } catch {
+    // Ignore storage failures.
+  }
+  try {
+    const parts = String(document.cookie || "").split(";");
+    for (let i = 0; i < parts.length; i += 1) {
+      const part = parts[i].trim();
+      if (part.indexOf(DEVICE_ID_KEY + "=") === 0) {
+        add(decodeURIComponent(part.slice(DEVICE_ID_KEY.length + 1)));
+      }
+    }
+  } catch {
+    // Ignore cookie failures.
+  }
+  return ids;
+}
+
+function isOwnerHolderName(name) {
+  return (
+    String(name || "").replace(/\s+/g, " ").trim().toLowerCase() ===
+    "alvaro calvete"
+  );
+}
+
+function hasPoisonedBannedDeviceId(holders) {
+  const localIds = readBrowserDeviceIds();
+  if (!localIds.length || !Array.isArray(holders)) {
+    return false;
+  }
+  return holders.some((holder) => {
+    if (!isHolderBanned(holder)) {
+      return false;
+    }
+    const id = String(holder.device_id || "").trim();
+    if (!id || localIds.indexOf(id) === -1) {
+      return false;
+    }
+    return !isOwnerHolderName(holder.name);
+  });
+}
+
+function deleteIdbDeviceId() {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) {
+      resolve();
+      return;
+    }
+    let settled = false;
+    const done = () => {
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    };
+    const timer = window.setTimeout(done, 500);
+    const finish = () => {
+      window.clearTimeout(timer);
+      done();
+    };
+    try {
+      const request = window.indexedDB.open(DEVICE_IDB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(DEVICE_IDB_STORE)) {
+          db.createObjectStore(DEVICE_IDB_STORE);
+        }
+      };
+      request.onerror = finish;
+      request.onblocked = finish;
+      request.onsuccess = () => {
+        const db = request.result;
+        try {
+          if (!db.objectStoreNames.contains(DEVICE_IDB_STORE)) {
+            db.close();
+            finish();
+            return;
+          }
+          const tx = db.transaction(DEVICE_IDB_STORE, "readwrite");
+          const store = tx.objectStore(DEVICE_IDB_STORE);
+          store.delete(DEVICE_ID_KEY);
+          tx.oncomplete = () => {
+            db.close();
+            finish();
+          };
+          tx.onerror = () => {
+            db.close();
+            finish();
+          };
+          tx.onabort = () => {
+            db.close();
+            finish();
+          };
+        } catch {
+          try {
+            db.close();
+          } catch {
+            // Ignore close failures.
+          }
+          finish();
+        }
+      };
+    } catch {
+      finish();
+    }
+  });
+}
+
+async function clearBrowserDeviceId(secret) {
+  try {
+    window.localStorage.removeItem(DEVICE_ID_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie =
+      DEVICE_ID_KEY + "=; Max-Age=0; Path=/; SameSite=Lax" + secure;
+  } catch {
+    // Ignore cookie failures.
+  }
+  await deleteIdbDeviceId();
+  const response = await fetch(LIST_URL + "?cb=" + String(Date.now()), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + secret,
+      "Cache-Control": "no-store",
+    },
+    cache: "no-store",
+    credentials: "include",
+    body: JSON.stringify({ action: "reset_device" }),
+  });
+  if (response.status === 401) {
+    const error = new Error("unauthorized");
+    error.code = "unauthorized";
+    throw error;
+  }
+  if (!response.ok) {
+    throw new Error("reset failed");
   }
 }
 
@@ -364,6 +522,19 @@ async function loadHolders(secret, fromUnlock) {
     }
     setStatus(listStatusEl, "", false);
     setStatus(gateStatusEl, "", false);
+    if (!autoResetAttempted && hasPoisonedBannedDeviceId(payload.holders)) {
+      autoResetAttempted = true;
+      try {
+        await clearBrowserDeviceId(secret);
+        setStatus(
+          listStatusEl,
+          "Cleared stuck device ID on this phone. Open the ticket now.",
+          false,
+        );
+      } catch {
+        // Ignore auto-reset failures; manual reset button can retry.
+      }
+    }
   } catch (error) {
     const unauthorized = error && error.code === "unauthorized";
     if (unauthorized) {
@@ -478,6 +649,41 @@ if (lockBtn) {
       secretInput.value = "";
     }
     showGate("PIN forgotten on this device.", false);
+  });
+}
+
+if (resetDeviceBtn) {
+  resetDeviceBtn.addEventListener("click", () => {
+    if (resetInFlight) {
+      return;
+    }
+    const secret = readStoredSecret();
+    if (!secret) {
+      showGate("Paste the list token or PIN.", false);
+      return;
+    }
+    resetInFlight = true;
+    setStatus(listStatusEl, "Clearing stuck device ID…", false);
+    clearBrowserDeviceId(secret)
+      .then(() => {
+        setStatus(
+          listStatusEl,
+          "Cleared stuck device ID on this phone. Open the ticket now.",
+          false,
+        );
+      })
+      .catch((error) => {
+        const unauthorized = error && error.code === "unauthorized";
+        if (unauthorized) {
+          clearStoredSecret();
+          showGate("Wrong token or PIN.", true);
+        } else {
+          setStatus(listStatusEl, "Could not clear device ID. Try again.", true);
+        }
+      })
+      .finally(() => {
+        resetInFlight = false;
+      });
   });
 }
 
