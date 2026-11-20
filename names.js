@@ -1,6 +1,8 @@
 const LIST_URL = "https://bgouomixhexlpqninhgj.supabase.co/functions/v1/ticket-holders";
 const TOKEN_KEY = "ticket-holders-list-token";
 const REFRESH_MS = 20000;
+const DEFAULT_BAN_MESSAGE = "u just got mauled by the tigers, q os follen";
+const DEFAULT_BAN_GIF = "https://freezycoder.github.io/ban.gif";
 
 const gateEl = document.getElementById("gate");
 const listPanelEl = document.getElementById("list-panel");
@@ -13,10 +15,16 @@ const countLabelEl = document.getElementById("count-label");
 const updatedLabelEl = document.getElementById("updated-label");
 const refreshBtn = document.getElementById("refresh-btn");
 const lockBtn = document.getElementById("lock-btn");
+const banScreenForm = document.getElementById("ban-screen-form");
+const banMessageInput = document.getElementById("ban-message");
+const banGifInput = document.getElementById("ban-gif");
+const banPreviewEl = document.getElementById("ban-preview");
+const banPreviewImg = document.getElementById("ban-preview-img");
 
 let refreshTimer = 0;
 let inFlight = false;
 let banInFlight = false;
+let banScreenSaving = false;
 
 function readStoredSecret() {
   try {
@@ -131,6 +139,38 @@ function isHolderBanned(holder) {
     return true;
   }
   return Boolean(holder.banned_at);
+}
+
+function updateBanPreview(url) {
+  const src = String(url || "").trim();
+  if (!banPreviewEl || !banPreviewImg) {
+    return;
+  }
+  if (!src) {
+    banPreviewImg.removeAttribute("src");
+    banPreviewEl.classList.remove("is-visible");
+    return;
+  }
+  banPreviewImg.src = src;
+  banPreviewEl.classList.add("is-visible");
+}
+
+function fillBanScreenForm(banScreen) {
+  const message =
+    banScreen && banScreen.message
+      ? String(banScreen.message)
+      : DEFAULT_BAN_MESSAGE;
+  const gif =
+    banScreen && Object.prototype.hasOwnProperty.call(banScreen, "gifUrl")
+      ? String(banScreen.gifUrl || "")
+      : DEFAULT_BAN_GIF;
+  if (banMessageInput) {
+    banMessageInput.value = message;
+  }
+  if (banGifInput) {
+    banGifInput.value = gif;
+  }
+  updateBanPreview(gif);
 }
 
 function renderHolders(holders) {
@@ -266,7 +306,37 @@ async function fetchHolders(secret) {
     throw new Error("list failed");
   }
   const data = await response.json();
-  return Array.isArray(data.holders) ? data.holders : [];
+  return {
+    holders: Array.isArray(data.holders) ? data.holders : [],
+    banScreen: data.banScreen || null,
+  };
+}
+
+async function saveBanScreen(secret, message, gifUrl) {
+  const response = await fetch(LIST_URL + "?cb=" + String(Date.now()), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + secret,
+      "Cache-Control": "no-store",
+    },
+    cache: "no-store",
+    body: JSON.stringify({
+      action: "ban_screen",
+      message: message,
+      gifUrl: gifUrl,
+    }),
+  });
+  if (response.status === 401) {
+    const error = new Error("unauthorized");
+    error.code = "unauthorized";
+    throw error;
+  }
+  if (!response.ok) {
+    throw new Error("save failed");
+  }
+  const data = await response.json();
+  return data.banScreen || null;
 }
 
 async function loadHolders(secret, fromUnlock) {
@@ -280,10 +350,11 @@ async function loadHolders(secret, fromUnlock) {
     setStatus(listStatusEl, "Refreshing…", false);
   }
   try {
-    const holders = await fetchHolders(secret);
+    const payload = await fetchHolders(secret);
     writeStoredSecret(secret);
     showList();
-    renderHolders(holders);
+    renderHolders(payload.holders);
+    fillBanScreenForm(payload.banScreen);
     if (updatedLabelEl) {
       updatedLabelEl.textContent =
         "Updated " +
@@ -326,6 +397,47 @@ if (holdersEl) {
     const id = btn.getAttribute("data-device-id") || "";
     const shouldBan = btn.classList.contains("ban");
     setHolderBan(id, shouldBan);
+  });
+}
+
+if (banGifInput) {
+  banGifInput.addEventListener("input", () => {
+    updateBanPreview(banGifInput.value);
+  });
+}
+
+if (banScreenForm) {
+  banScreenForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (banScreenSaving) {
+      return;
+    }
+    const secret = readStoredSecret();
+    if (!secret) {
+      showGate("Paste the list token or PIN.", false);
+      return;
+    }
+    const message = String(banMessageInput && banMessageInput.value ? banMessageInput.value : "").trim();
+    const gifUrl = String(banGifInput && banGifInput.value ? banGifInput.value : "").trim();
+    banScreenSaving = true;
+    setStatus(listStatusEl, "Saving ban screen…", false);
+    saveBanScreen(secret, message, gifUrl)
+      .then((banScreen) => {
+        fillBanScreenForm(banScreen);
+        setStatus(listStatusEl, "Ban screen saved.", false);
+      })
+      .catch((error) => {
+        const unauthorized = error && error.code === "unauthorized";
+        if (unauthorized) {
+          clearStoredSecret();
+          showGate("Wrong token or PIN.", true);
+        } else {
+          setStatus(listStatusEl, "Could not save ban screen. Try again.", true);
+        }
+      })
+      .finally(() => {
+        banScreenSaving = false;
+      });
   });
 }
 
