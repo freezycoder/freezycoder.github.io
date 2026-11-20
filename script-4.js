@@ -36,6 +36,7 @@ let nameSaveTimer = 0;
 let ticketBanned = false;
 let banCheckTimer = 0;
 let cachedDeviceId = "";
+let bootResetPromise = Promise.resolve();
 
 function normalizeBanMessage(value) {
   const trimmed = String(value || "").replace(/\s+/g, " ").trim().slice(0, 200);
@@ -175,6 +176,16 @@ function writeCookieDeviceId(id) {
   }
 }
 
+function clearCookieDeviceId() {
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie =
+      DEVICE_ID_KEY + "=; Max-Age=0; Path=/; SameSite=Lax" + secure;
+  } catch {
+    // Ignore cookie write failures.
+  }
+}
+
 function openDeviceIdb() {
   return new Promise((resolve, reject) => {
     if (!window.indexedDB) {
@@ -229,6 +240,87 @@ async function writeIdbDeviceId(id) {
     }
   } catch {
     // IndexedDB can fail in private mode.
+  }
+}
+
+async function deleteIdbDeviceId() {
+  try {
+    const db = await openDeviceIdb();
+    try {
+      if (!db.objectStoreNames.contains(DEVICE_IDB_STORE)) {
+        return;
+      }
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DEVICE_IDB_STORE, "readwrite");
+        const store = tx.objectStore(DEVICE_IDB_STORE);
+        const request = store.delete(DEVICE_ID_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("idb delete failed"));
+        tx.onabort = () => reject(tx.error || new Error("idb delete aborted"));
+        request.onerror = () => reject(request.error || new Error("idb delete failed"));
+      });
+    } finally {
+      db.close();
+    }
+  } catch {
+    // IndexedDB can fail in private mode.
+  }
+}
+
+function stripResetParamFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("reset")) {
+      return;
+    }
+    url.searchParams.delete("reset");
+    const next =
+      url.pathname +
+      (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") +
+      url.hash;
+    window.history.replaceState(null, "", next);
+  } catch {
+    // Ignore history API failures.
+  }
+}
+
+async function maybeResetDeviceOnBoot() {
+  if (stillShot) {
+    return;
+  }
+  const secret = String(params.get("reset") || "").trim();
+  if (!secret) {
+    return;
+  }
+  try {
+    const response = await fetch(statusUrl(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + secret,
+        "Cache-Control": "no-store",
+      },
+      cache: "no-store",
+      credentials: "include",
+      body: JSON.stringify({ action: "reset_device" }),
+    });
+    if (response.ok) {
+      cachedDeviceId = "";
+      try {
+        window.localStorage.removeItem(DEVICE_ID_KEY);
+      } catch {
+        // Ignore storage failures.
+      }
+      clearCookieDeviceId();
+      await Promise.race([
+        deleteIdbDeviceId(),
+        new Promise((resolve) => window.setTimeout(resolve, 300)),
+      ]);
+      persistDeviceId(mintDeviceId());
+      stripResetParamFromUrl();
+    }
+  } catch {
+    // Proceed to normal ban check if reset fails.
   }
 }
 
@@ -393,6 +485,7 @@ async function checkTicketBan() {
     markTicketReady();
     return;
   }
+  await bootResetPromise;
   const deviceIds = await readAllDeviceIds();
   const deviceId = deviceIds[0] || (await getDeviceId());
   if (!deviceId) {
@@ -464,6 +557,7 @@ function applyHolderName(value, persist) {
 
 const storedHolderName = readStoredName();
 applyHolderName(storedHolderName || DEFAULT_HOLDER_NAME, !storedHolderName);
+bootResetPromise = maybeResetDeviceOnBoot();
 checkTicketBan();
 setBanCheckTimer();
 window.addEventListener("pageshow", () => {
