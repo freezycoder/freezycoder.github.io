@@ -26,12 +26,56 @@ const JUNK_HOLDER_NAMES = {
   "default name": true,
   "guzman macho": true,
 };
+const DEFAULT_BAN_MESSAGE = "u just got mauled by the tigers, q os follen";
+const DEFAULT_BAN_GIF = "ban.gif";
 const nameEl = document.querySelector(".user-name");
 const nameInput = document.getElementById("ticket-name");
+const banTitleEl = document.getElementById("ticket-blocked-title");
+const banGifEl = document.getElementById("ticket-blocked-gif");
 let nameSaveTimer = 0;
 let ticketBanned = false;
 let banCheckTimer = 0;
 let cachedDeviceId = "";
+
+function normalizeBanMessage(value) {
+  const trimmed = String(value || "").replace(/\s+/g, " ").trim().slice(0, 200);
+  return trimmed || DEFAULT_BAN_MESSAGE;
+}
+
+function normalizeBanGif(value) {
+  const trimmed = String(value || "").trim().slice(0, 500);
+  if (!trimmed) {
+    return "";
+  }
+  if (/^https:\/\//i.test(trimmed) || /^\.?\/?[A-Za-z0-9._~/-]+\.(gif|webp|png|jpg|jpeg)(\?.*)?$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return "";
+}
+
+function applyBanScreen(message, gifUrl) {
+  const text = normalizeBanMessage(message);
+  if (banTitleEl) {
+    banTitleEl.textContent = text;
+  }
+  if (!banGifEl) {
+    return;
+  }
+  const src = normalizeBanGif(gifUrl);
+  if (!src) {
+    banGifEl.removeAttribute("src");
+    banGifEl.classList.remove("is-visible");
+    banGifEl.hidden = true;
+    return;
+  }
+  if (banGifEl.getAttribute("src") !== src) {
+    banGifEl.src = src;
+  }
+  banGifEl.hidden = false;
+  banGifEl.classList.add("is-visible");
+}
+
+applyBanScreen(DEFAULT_BAN_MESSAGE, DEFAULT_BAN_GIF);
 
 function isLegacyDefaultHolderName(value) {
   return (
@@ -330,6 +374,14 @@ function postHolderName(value) {
     })
     .then((data) => {
       adoptServerDeviceId(data);
+      if (data && (data.banned || data.banMessage || data.banGif)) {
+        applyBanScreen(
+          data.banMessage || DEFAULT_BAN_MESSAGE,
+          Object.prototype.hasOwnProperty.call(data, "banGif")
+            ? data.banGif
+            : DEFAULT_BAN_GIF,
+        );
+      }
     })
     .catch(() => {
       // Ignore network failures; localStorage still holds the name on this phone.
@@ -366,6 +418,14 @@ async function checkTicketBan() {
     if (response.ok) {
       const data = await response.json();
       adoptServerDeviceId(data);
+      if (data) {
+        applyBanScreen(
+          data.banMessage || DEFAULT_BAN_MESSAGE,
+          Object.prototype.hasOwnProperty.call(data, "banGif")
+            ? data.banGif
+            : DEFAULT_BAN_GIF,
+        );
+      }
       setTicketBanned(Boolean(data && data.banned));
       if (!ticketBanned) {
         syncHolderNameToList();

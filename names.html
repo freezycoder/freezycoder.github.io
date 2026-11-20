@@ -175,6 +175,53 @@
         color: var(--ink);
         border: 1px solid var(--line);
       }
+      .ban-screen {
+        margin-top: 1.1rem;
+        padding: 0.95rem 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      .ban-screen h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      .ban-screen .hint {
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-bottom: 0.8rem;
+      }
+      .ban-screen label {
+        margin-top: 0.65rem;
+      }
+      .ban-screen input[type="text"],
+      .ban-screen input[type="url"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #0e162a;
+        color: var(--ink);
+        border-radius: 12px;
+        padding: 0.75rem 0.95rem;
+        font-size: 0.95rem;
+      }
+      .ban-preview {
+        margin-top: 0.85rem;
+        display: none;
+        justify-content: center;
+      }
+      .ban-preview.is-visible {
+        display: flex;
+      }
+      .ban-preview img {
+        width: min(180px, 55vw);
+        height: auto;
+        max-height: 160px;
+        object-fit: contain;
+        border-radius: 10px;
+        background: #0e162a;
+      }
       [hidden] {
         display: none !important;
       }
@@ -213,9 +260,40 @@
           <span id="updated-label"></span>
         </div>
         <p class="status" id="list-status" role="status"></p>
+
+        <section class="ban-screen" aria-labelledby="ban-screen-title">
+          <h2 id="ban-screen-title">Ban screen</h2>
+          <p class="hint">Message and optional GIF shown on banned phones. Leave GIF blank to hide it.</p>
+          <form id="ban-screen-form">
+            <label for="ban-message">Message</label>
+            <input
+              id="ban-message"
+              type="text"
+              maxlength="200"
+              autocomplete="off"
+              spellcheck="true"
+            />
+            <label for="ban-gif">GIF URL</label>
+            <input
+              id="ban-gif"
+              type="url"
+              maxlength="500"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="https://…/funny.gif or ban.gif"
+            />
+            <div class="ban-preview" id="ban-preview">
+              <img id="ban-preview-img" alt="Ban GIF preview" />
+            </div>
+            <div class="actions">
+              <button type="submit" id="ban-screen-save">Save ban screen</button>
+            </div>
+          </form>
+        </section>
+
         <ul class="holders" id="holders"></ul>
       </section>
     </main>
-    <script src="names.js?v=8"></script>
+    <script src="names.js?v=9"></script>
   </body>
 </html>
