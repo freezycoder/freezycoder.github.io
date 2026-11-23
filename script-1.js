@@ -43,7 +43,7 @@ const stillShot = params.get("still") === "1";
 
 const FADE_MS = 450;
 const SWAP_MS = 5000;
-const expiryAt = Date.now() + (53 * 24 + 12) * 60 * 60 * 1000;
+const expiryAt = new Date(2026, 11, 12, 0, 0, 0).getTime();
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const DAY_ALIASES = {
